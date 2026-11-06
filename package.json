@@ -31,7 +31,15 @@
     "worker-pool",
     "typescript"
   ],
-  "author": "Antigravity Engineering",
+  "author": "Herman Ofwiti (Hamidooh)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Hamidooh/event-flow.git"
+  },
+  "homepage": "https://github.com/Hamidooh/event-flow#readme",
+  "bugs": {
+    "url": "https://github.com/Hamidooh/event-flow/issues"
+  },
   "license": "MIT",
   "dependencies": {
     "ws": "^8.18.0"

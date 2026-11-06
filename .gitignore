@@ -16,11 +16,31 @@ yarn-debug.log*
 yarn-error.log*
 .eventflow-wal/
 .eventflow-data/
+*.wal
+*.wal.*
 
-# Environment and local configs
+# Secrets, Environment & Credentials (Never commit)
 .env
+.env.*
 .env.local
 .env.*.local
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.secret
+*.token
+credentials.json
+auth.json
+id_rsa*
+
+# Temporary & Cache
+.cache/
+tmp/
+temp/
+*.tmp
+*.bak
 
 # IDE & Editor files
 .vscode/
