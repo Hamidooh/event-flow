@@ -3,132 +3,223 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EventFlow — Distributed Workflow & DAG Orchestration Engine</title>
+  <title>EventFlow — Workflow Orchestration</title>
   <link rel="stylesheet" href="/ui/dashboard.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="app-container">
-    <!-- Header -->
-    <header class="navbar">
-      <div class="brand">
-        <div class="logo-icon">⚡</div>
-        <div class="brand-text">
+  <div class="app-layout">
+    <!-- Clean Minimalist Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="brand">
+          <div class="brand-icon">⚡</div>
           <span class="brand-name">EventFlow</span>
-          <span class="brand-tag">v1.0.0 • Orchestrator</span>
+          <span class="brand-badge">Stages</span>
+        </div>
+        <div class="connection-status" id="ws-status">
+          <span class="status-dot"></span>
+          <span class="status-text">Connected</span>
         </div>
       </div>
-      <div class="nav-status">
-        <div class="status-indicator connected" id="ws-status">
-          <span class="dot"></span>
-          <span class="label">LIVE STREAM</span>
+
+      <div class="header-center">
+        <div class="workflow-picker-group">
+          <label for="workflow-select" class="visually-hidden">Workflow</label>
+          <select id="workflow-select" class="workflow-dropdown">
+            <option value="">Loading workflows...</option>
+          </select>
         </div>
-        <div class="system-time" id="system-time">00:00:00</div>
+      </div>
+
+      <div class="header-right">
+        <button id="btn-toggle-payload" class="btn btn-ghost" title="Toggle payload editor">
+          <span class="btn-icon">⚙</span> Payload
+        </button>
+        <button id="btn-run" class="btn btn-primary">
+          <span class="btn-icon">▶</span> Run Workflow
+        </button>
       </div>
     </header>
 
-    <!-- Metrics Ribbon -->
-    <section class="metrics-grid">
-      <div class="metric-card">
-        <span class="metric-label">ACTIVE WORKFLOWS</span>
-        <div class="metric-value" id="metric-active-workflows">0</div>
-        <span class="metric-sub" id="metric-total-workflows">0 total executed</span>
+    <!-- Slide-down Payload Drawer -->
+    <div id="payload-drawer" class="payload-drawer" style="display: none;">
+      <div class="drawer-header">
+        <span class="drawer-title">Execution Payload (JSON)</span>
+        <button id="btn-close-payload" class="btn-close">✕</button>
       </div>
-      <div class="metric-card">
-        <span class="metric-label">WORKER POOL</span>
-        <div class="metric-value highlight" id="metric-active-workers">0 / 10</div>
-        <span class="metric-sub" id="metric-queued-tasks">0 tasks in queue</span>
+      <textarea id="workflow-input" class="payload-editor" rows="3">{\n  "batchId": "DEMO-900",\n  "recordsCount": 150\n}</textarea>
+    </div>
+
+    <!-- Active Run Status Banner & Metrics Bar -->
+    <section class="run-banner">
+      <div class="banner-summary">
+        <div class="workflow-title-wrap">
+          <h1 class="active-title" id="active-workflow-title">Select a Workflow to Begin</h1>
+          <span class="status-pill pill-idle" id="active-instance-badge">IDLE</span>
+        </div>
+        <div class="run-meta" id="run-meta-text">No active execution. Click "Run Workflow" above.</div>
       </div>
-      <div class="metric-card">
-        <span class="metric-label">SUCCESS RATE</span>
-        <div class="metric-value success" id="metric-success-rate">100%</div>
-        <span class="metric-sub" id="metric-failed-count">0 failures recorded</span>
+
+      <!-- Linear-style Progress Bar -->
+      <div class="progress-container">
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="overall-progress-bar" style="width: 0%;"></div>
+        </div>
+        <div class="progress-labels">
+          <span id="progress-steps-count">0 of 0 steps completed</span>
+          <span id="progress-percentage">0%</span>
+        </div>
       </div>
-      <div class="metric-card">
-        <span class="metric-label">AVG DURATION</span>
-        <div class="metric-value" id="metric-avg-duration">0ms</div>
-        <span class="metric-sub" id="metric-retried-count">0 step retries</span>
+
+      <!-- Action Controls for Active Run -->
+      <div class="banner-actions" id="instance-controls" style="display: none;">
+        <button id="btn-pause" class="btn btn-subtle btn-sm">⏸ Pause</button>
+        <button id="btn-resume" class="btn btn-subtle btn-sm" style="display: none;">▶ Resume</button>
+        <button id="btn-cancel" class="btn btn-danger-subtle btn-sm">⏹ Cancel</button>
       </div>
     </section>
 
-    <!-- Main Workspace -->
-    <main class="dashboard-main">
-      <!-- Left Panel: Trigger & Instances -->
-      <aside class="panel left-panel">
-        <div class="panel-section">
-          <h2 class="section-title">Trigger Workflow</h2>
-          <div class="form-group">
-            <label for="workflow-select">Select Workflow Definition</label>
-            <select id="workflow-select" class="form-select">
-              <option value="">Loading workflows...</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="workflow-input">Execution Payload (JSON)</label>
-            <textarea id="workflow-input" class="form-code" rows="4">{\n  "batchId": "b-8891",\n  "recordsCount": 100\n}</textarea>
-          </div>
-          <button id="btn-run" class="btn btn-primary">
-            <span class="btn-icon">▶</span> Run Workflow
-          </button>
+    <!-- Main Workspace: 3-Stage Columnar Board + Side History Drawer -->
+    <div class="workspace-body">
+      <!-- History Sidebar (Collapsible) -->
+      <aside class="history-sidebar" id="history-sidebar">
+        <div class="sidebar-header">
+          <span class="sidebar-heading">Executions</span>
+          <button id="btn-refresh" class="btn-icon-subtle" title="Refresh list">↻</button>
         </div>
-
-        <div class="panel-section instances-section">
-          <div class="section-header">
-            <h2 class="section-title">Executions History</h2>
-            <button id="btn-refresh" class="btn-icon-only" title="Refresh">↻</button>
-          </div>
-          <div class="instances-list" id="instances-list">
-            <div class="empty-hint">No executions yet. Run a workflow above.</div>
-          </div>
+        <div class="instances-scroll" id="instances-list">
+          <div class="empty-hint">No executions yet.</div>
         </div>
       </aside>
 
-      <!-- Center & Right Panel: Visualizer & Details -->
-      <section class="panel visualizer-panel">
-        <div class="canvas-header">
-          <div class="canvas-title-group">
-            <h2 class="section-title" id="active-workflow-title">DAG Topology & Live Execution</h2>
-            <span class="badge" id="active-instance-badge">NO SELECTION</span>
-          </div>
-          <div class="canvas-controls" id="instance-controls" style="display: none;">
-            <button id="btn-pause" class="btn btn-secondary btn-sm">⏸ Pause</button>
-            <button id="btn-resume" class="btn btn-secondary btn-sm" style="display: none;">▶ Resume</button>
-            <button id="btn-cancel" class="btn btn-danger btn-sm">⏹ Cancel</button>
-          </div>
-        </div>
-
-        <!-- DAG Visualizer Canvas / SVG Area -->
-        <div class="dag-container" id="dag-container">
-          <svg id="dag-svg" class="dag-svg"></svg>
-          <div id="dag-nodes-overlay" class="dag-nodes-overlay"></div>
-        </div>
-
-        <!-- Tabs: Step Inspector & Gantt Timeline -->
-        <div class="sub-panel">
-          <div class="tabs-nav">
-            <button class="tab-btn active" data-tab="tab-gantt">Gantt Timeline</button>
-            <button class="tab-btn" data-tab="tab-logs">Live Telemetry Events</button>
-            <button class="tab-btn" data-tab="tab-output">Output & Context</button>
-          </div>
-
-          <div class="tab-content active" id="tab-gantt">
-            <div class="gantt-chart" id="gantt-chart">
-              <div class="empty-hint">Timeline data will appear here during execution.</div>
+      <!-- Minimalist 3-Stage Board -->
+      <main class="stages-board">
+        <!-- Stage 1 Column: Ingestion & Trigger -->
+        <div class="stage-column" id="stage-1">
+          <div class="stage-header">
+            <div class="stage-num-badge">1</div>
+            <div class="stage-info">
+              <h2 class="stage-name">Ingestion & Trigger</h2>
+              <span class="stage-sub" id="stage-1-sub">0 steps</span>
             </div>
           </div>
-
-          <div class="tab-content" id="tab-logs">
-            <div class="terminal-logs" id="terminal-logs"></div>
-          </div>
-
-          <div class="tab-content" id="tab-output">
-            <pre class="json-viewer" id="json-viewer">// Select an instance or step to inspect outputs</pre>
+          <div class="cards-list" id="stage-1-cards">
+            <div class="empty-card-placeholder">Waiting for workflow definition...</div>
           </div>
         </div>
-      </section>
-    </main>
+
+        <div class="stage-connector">➔</div>
+
+        <!-- Stage 2 Column: Processing & Enrichment -->
+        <div class="stage-column" id="stage-2">
+          <div class="stage-header">
+            <div class="stage-num-badge">2</div>
+            <div class="stage-info">
+              <h2 class="stage-name">Processing & Enrichment</h2>
+              <span class="stage-sub" id="stage-2-sub">0 steps</span>
+            </div>
+          </div>
+          <div class="cards-list" id="stage-2-cards">
+            <div class="empty-card-placeholder">Waiting for workflow definition...</div>
+          </div>
+        </div>
+
+        <div class="stage-connector">➔</div>
+
+        <!-- Stage 3 Column: Destination & Fulfillment -->
+        <div class="stage-column" id="stage-3">
+          <div class="stage-header">
+            <div class="stage-num-badge">3</div>
+            <div class="stage-info">
+              <h2 class="stage-name">Destination & Fulfillment</h2>
+              <span class="stage-sub" id="stage-3-sub">0 steps</span>
+            </div>
+          </div>
+          <div class="cards-list" id="stage-3-cards">
+            <div class="empty-card-placeholder">Waiting for workflow definition...</div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Bottom Inspector & Activity Drawer -->
+    <footer class="bottom-drawer" id="bottom-drawer">
+      <div class="drawer-tabs">
+        <button class="tab-item active" data-tab="tab-feed">
+          <span class="tab-icon">⚡</span> Activity Feed
+        </button>
+        <button class="tab-item" data-tab="tab-details">
+          <span class="tab-icon">📋</span> Step Inspector
+        </button>
+        <button class="tab-item" data-tab="tab-timeline">
+          <span class="tab-icon">📊</span> Waterfall Timeline
+        </button>
+        <button class="tab-item" data-tab="tab-system">
+          <span class="tab-icon">📈</span> Engine Health
+        </button>
+      </div>
+
+      <div class="drawer-content">
+        <!-- Activity Feed Tab -->
+        <div class="tab-pane active" id="tab-feed">
+          <div class="feed-stream" id="terminal-logs">
+            <div class="feed-empty">Live system events and step execution updates appear here.</div>
+          </div>
+        </div>
+
+        <!-- Step Inspector Tab -->
+        <div class="tab-pane" id="tab-details">
+          <div class="inspector-card">
+            <div class="inspector-header">
+              <div class="inspector-header-left">
+                <h3 id="inspector-step-title" class="inspector-title">Select any step card above to inspect outputs</h3>
+                <span id="inspector-step-status" class="status-pill pill-idle">NONE</span>
+              </div>
+              <button id="btn-copy-json" class="btn btn-subtle btn-sm" title="Copy JSON to clipboard">
+                <span>📋</span> Copy JSON
+              </button>
+            </div>
+            <pre class="json-code" id="json-viewer">// Step outputs and context will appear here</pre>
+          </div>
+        </div>
+
+        <!-- Waterfall Timeline Tab -->
+        <div class="tab-pane" id="tab-timeline">
+          <div class="waterfall-list" id="gantt-chart">
+            <div class="feed-empty">Timeline will render automatically during workflow execution.</div>
+          </div>
+        </div>
+
+        <!-- Engine Health Tab -->
+        <div class="tab-pane" id="tab-system">
+          <div class="health-grid">
+            <div class="health-stat">
+              <span class="stat-label">Worker Capacity</span>
+              <span class="stat-val" id="metric-active-workers">0 / 10</span>
+              <span class="stat-sub" id="metric-queued-tasks">0 queued</span>
+            </div>
+            <div class="health-stat">
+              <span class="stat-label">Total Executions</span>
+              <span class="stat-val" id="metric-total-workflows">0</span>
+              <span class="stat-sub" id="metric-active-workflows">0 running</span>
+            </div>
+            <div class="health-stat">
+              <span class="stat-label">Success Rate</span>
+              <span class="stat-val text-success" id="metric-success-rate">100%</span>
+              <span class="stat-sub" id="metric-failed-count">0 failures</span>
+            </div>
+            <div class="health-stat">
+              <span class="stat-label">Average Step Time</span>
+              <span class="stat-val" id="metric-avg-duration">0ms</span>
+              <span class="stat-sub" id="metric-retried-count">0 retries</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
   </div>
 
   <script src="/ui/dashboard.js"></script>

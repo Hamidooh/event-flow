@@ -30,7 +30,14 @@ export class LiveTelemetryServer {
           id: w.id,
           name: w.name,
           version: w.version,
+          description: w.description,
           stepsCount: w.steps.length,
+          // Full step definitions so the UI board can render template cards
+          steps: w.steps.map((s) => ({
+            id: s.id,
+            name: s.name,
+            dependencies: s.dependencies ?? [],
+          })),
         })),
         instances: this.orchestrator.getAllInstances(),
       };

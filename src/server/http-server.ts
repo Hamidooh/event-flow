@@ -6,6 +6,7 @@
 import * as http from 'node:http';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { Orchestrator } from '../core/engine/orchestrator.js';
 import { LiveTelemetryServer } from './ws-server.js';
@@ -30,7 +31,20 @@ export class EventFlowServer {
     this.orchestrator = options.orchestrator;
     this.port = options.port ?? 3000;
     this.host = options.host ?? '0.0.0.0';
-    this.server = http.createServer(this.handleRequest.bind(this));
+    // Wrap async handler so uncaught promise rejections never crash the process.
+    // Node's http.createServer does NOT automatically propagate async errors,
+    // so we must handle the promise explicitly here.
+    this.server = http.createServer((req, res) => {
+      this.handleRequest(req, res).catch((err) => {
+        console.error('[EventFlowServer] Unhandled request error:', err);
+        if (!res.headersSent) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+        }
+        if (!res.writableEnded) {
+          res.end(JSON.stringify({ error: 'Internal Server Error' }));
+        }
+      });
+    });
     this.wsServer = new LiveTelemetryServer(this.server, this.orchestrator);
   }
 
@@ -87,29 +101,31 @@ export class EventFlowServer {
       const runMatch = pathname.match(/^\/api\/workflows\/([^/]+)\/run$/);
       if (req.method === 'POST' && runMatch) {
         const workflowId = decodeURIComponent(runMatch[1]!);
+
+        // Validate the workflow exists before reading the body
+        if (!this.orchestrator.getAllWorkflows().find((w) => w.id === workflowId)) {
+          return this.sendJson(res, 404, { error: `Workflow "${workflowId}" not found` });
+        }
+
         const body = await this.readJsonBody(req);
-        
+        const instanceId = randomUUID();
+
         // Run in background or wait for completion based on query param ?sync=true
         const isSync = parsedUrl.searchParams.get('sync') === 'true';
 
         if (isSync) {
-          const instance = await this.orchestrator.runWorkflow(workflowId, body);
+          const instance = await this.orchestrator.runWorkflow(workflowId, body, instanceId);
           return this.sendJson(res, 200, instance);
         } else {
-          // Fire and return instance promise / initial state
-          const runPromise = this.orchestrator.runWorkflow(workflowId, body);
-          // Wait slightly for instance to be registered
-          await new Promise((r) => setTimeout(r, 20));
-          const instances = this.orchestrator.getAllInstances();
-          const latestInstance = instances[instances.length - 1];
-
-          runPromise.catch((err) => {
+          // Fire and forget with deterministic instanceId
+          const runPromise = this.orchestrator.runWorkflow(workflowId, body, instanceId);
+          runPromise.catch((err: Error) => {
             console.error(`[Server] Background workflow error [${workflowId}]:`, err.message);
           });
 
           return this.sendJson(res, 202, {
             message: 'Workflow execution accepted',
-            instanceId: latestInstance?.id,
+            instanceId,
             workflowId,
           });
         }
@@ -231,9 +247,12 @@ export class EventFlowServer {
   private async readJsonBody(req: http.IncomingMessage): Promise<any> {
     return new Promise((resolve, reject) => {
       let data = '';
+      let rejected = false;
       req.on('data', (chunk) => {
         data += chunk;
-        if (data.length > 5 * 1024 * 1024) {
+        if (data.length > 5 * 1024 * 1024 && !rejected) {
+          rejected = true;
+          req.destroy(); // stop accumulating data once limit exceeded
           reject(new Error('Request payload too large'));
         }
       });

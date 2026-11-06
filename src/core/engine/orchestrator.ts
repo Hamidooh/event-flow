@@ -108,7 +108,8 @@ export class Orchestrator {
    */
   public async runWorkflow(
     workflowId: string,
-    input: Record<string, any> = {}
+    input: Record<string, any> = {},
+    customInstanceId?: string
   ): Promise<WorkflowInstance> {
     const workflow = this.workflows.get(workflowId);
     const dag = this.dags.get(workflowId);
@@ -117,7 +118,7 @@ export class Orchestrator {
       throw new Error(`Workflow with ID "${workflowId}" is not registered.`);
     }
 
-    const instanceId = randomUUID();
+    const instanceId = customInstanceId ?? randomUUID();
     const abortController = new AbortController();
     this.activeAbortControllers.set(instanceId, abortController);
 
