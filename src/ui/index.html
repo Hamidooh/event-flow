@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EventFlow — Distributed Workflow & DAG Orchestration Engine</title>
+  <link rel="stylesheet" href="/ui/dashboard.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="navbar">
+      <div class="brand">
+        <div class="logo-icon">⚡</div>
+        <div class="brand-text">
+          <span class="brand-name">EventFlow</span>
+          <span class="brand-tag">v1.0.0 • Orchestrator</span>
+        </div>
+      </div>
+      <div class="nav-status">
+        <div class="status-indicator connected" id="ws-status">
+          <span class="dot"></span>
+          <span class="label">LIVE STREAM</span>
+        </div>
+        <div class="system-time" id="system-time">00:00:00</div>
+      </div>
+    </header>
+
+    <!-- Metrics Ribbon -->
+    <section class="metrics-grid">
+      <div class="metric-card">
+        <span class="metric-label">ACTIVE WORKFLOWS</span>
+        <div class="metric-value" id="metric-active-workflows">0</div>
+        <span class="metric-sub" id="metric-total-workflows">0 total executed</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">WORKER POOL</span>
+        <div class="metric-value highlight" id="metric-active-workers">0 / 10</div>
+        <span class="metric-sub" id="metric-queued-tasks">0 tasks in queue</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">SUCCESS RATE</span>
+        <div class="metric-value success" id="metric-success-rate">100%</div>
+        <span class="metric-sub" id="metric-failed-count">0 failures recorded</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">AVG DURATION</span>
+        <div class="metric-value" id="metric-avg-duration">0ms</div>
+        <span class="metric-sub" id="metric-retried-count">0 step retries</span>
+      </div>
+    </section>
+
+    <!-- Main Workspace -->
+    <main class="dashboard-main">
+      <!-- Left Panel: Trigger & Instances -->
+      <aside class="panel left-panel">
+        <div class="panel-section">
+          <h2 class="section-title">Trigger Workflow</h2>
+          <div class="form-group">
+            <label for="workflow-select">Select Workflow Definition</label>
+            <select id="workflow-select" class="form-select">
+              <option value="">Loading workflows...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="workflow-input">Execution Payload (JSON)</label>
+            <textarea id="workflow-input" class="form-code" rows="4">{\n  "batchId": "b-8891",\n  "recordsCount": 100\n}</textarea>
+          </div>
+          <button id="btn-run" class="btn btn-primary">
+            <span class="btn-icon">▶</span> Run Workflow
+          </button>
+        </div>
+
+        <div class="panel-section instances-section">
+          <div class="section-header">
+            <h2 class="section-title">Executions History</h2>
+            <button id="btn-refresh" class="btn-icon-only" title="Refresh">↻</button>
+          </div>
+          <div class="instances-list" id="instances-list">
+            <div class="empty-hint">No executions yet. Run a workflow above.</div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Center & Right Panel: Visualizer & Details -->
+      <section class="panel visualizer-panel">
+        <div class="canvas-header">
+          <div class="canvas-title-group">
+            <h2 class="section-title" id="active-workflow-title">DAG Topology & Live Execution</h2>
+            <span class="badge" id="active-instance-badge">NO SELECTION</span>
+          </div>
+          <div class="canvas-controls" id="instance-controls" style="display: none;">
+            <button id="btn-pause" class="btn btn-secondary btn-sm">⏸ Pause</button>
+            <button id="btn-resume" class="btn btn-secondary btn-sm" style="display: none;">▶ Resume</button>
+            <button id="btn-cancel" class="btn btn-danger btn-sm">⏹ Cancel</button>
+          </div>
+        </div>
+
+        <!-- DAG Visualizer Canvas / SVG Area -->
+        <div class="dag-container" id="dag-container">
+          <svg id="dag-svg" class="dag-svg"></svg>
+          <div id="dag-nodes-overlay" class="dag-nodes-overlay"></div>
+        </div>
+
+        <!-- Tabs: Step Inspector & Gantt Timeline -->
+        <div class="sub-panel">
+          <div class="tabs-nav">
+            <button class="tab-btn active" data-tab="tab-gantt">Gantt Timeline</button>
+            <button class="tab-btn" data-tab="tab-logs">Live Telemetry Events</button>
+            <button class="tab-btn" data-tab="tab-output">Output & Context</button>
+          </div>
+
+          <div class="tab-content active" id="tab-gantt">
+            <div class="gantt-chart" id="gantt-chart">
+              <div class="empty-hint">Timeline data will appear here during execution.</div>
+            </div>
+          </div>
+
+          <div class="tab-content" id="tab-logs">
+            <div class="terminal-logs" id="terminal-logs"></div>
+          </div>
+
+          <div class="tab-content" id="tab-output">
+            <pre class="json-viewer" id="json-viewer">// Select an instance or step to inspect outputs</pre>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/ui/dashboard.js"></script>
+</body>
+</html>

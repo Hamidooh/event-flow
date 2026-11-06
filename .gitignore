@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Build and compilation
+dist/
+build/
+*.tsbuildinfo
+
+# Logs & Runtime State
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eventflow-wal/
+.eventflow-data/
+
+# Environment and local configs
+.env
+.env.local
+.env.*.local
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+
+# Test & Coverage
+coverage/
+.nyc_output/

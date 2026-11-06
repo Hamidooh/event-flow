@@ -1,0 +1,45 @@
+{
+  "name": "eventflow-engine",
+  "version": "1.0.0",
+  "description": "Distributed, resilient DAG workflow & event orchestration engine with persistent state machine, real-time telemetry, and live visualizer.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "eventflow": "./dist/cli/cli.js"
+  },
+  "scripts": {
+    "build": "tsc && node -e \"import('node:fs').then(fs => fs.cpSync('src/ui', 'dist/ui', { recursive: true, force: true }))\"",
+    "watch": "tsc --watch",
+    "start": "tsx src/cli/cli.ts start",
+    "dev": "tsx src/cli/cli.ts dev",
+    "test": "node --import tsx --test tests/**/*.test.ts",
+    "example:etl": "tsx examples/01-etl-pipeline.ts",
+    "example:saga": "tsx examples/02-ecommerce-saga.ts",
+    "example:enrich": "tsx examples/03-batch-data-enrichment.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "workflow",
+    "dag",
+    "orchestrator",
+    "distributed-systems",
+    "event-sourcing",
+    "state-machine",
+    "task-queue",
+    "resilience",
+    "worker-pool",
+    "typescript"
+  ],
+  "author": "Antigravity Engineering",
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.5.14",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
